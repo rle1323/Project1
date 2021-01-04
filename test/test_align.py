@@ -1,3 +1,9 @@
+import pytest
+
+@pytest.fixture
+def some_relevant_data():
+	return np.ones(10)
+
 def test_fasta_io():
 	assert True
 
