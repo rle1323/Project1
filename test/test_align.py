@@ -6,7 +6,7 @@ def some_relevant_data():
 	return np.ones(10)
 
 def test_fasta_io():
-	assert True
+	assert False
 
 def test_scoring_matrix_io():
 	assert True

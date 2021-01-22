@@ -69,8 +69,3 @@ class SmithWaterman(PairwiseAligner):
 
 class NeedlemanWunsch(PairwiseAligner):
 	pass
-
-print(read_sequence_file("../sequences/prot-0022.fa"))
-
-
-
