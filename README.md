@@ -21,12 +21,12 @@ python -m pytest test/*
 ```
 from the root directory of this project.
 
+### API Documentation
 
 ```
 class PairwiseAligner
-```
-    This is the parent class for both pairwise alignment algorithms to be implemented in this assignment.
-    It includes methods and attributes that are common to both algorithms.
+This is the parent class for both pairwise alignment algorithms to be implemented in this assignment.
+It includes methods and attributes that are common to both algorithms.
 
     Parameters:
         sub_matrix_file::str
@@ -35,3 +35,17 @@ class PairwiseAligner
             This is the gap opening penalty for the affine gap implementation of local or global alignment.
         gap_extension_penalty::float
             This is the gap extension penalty for the affine gap implementation of local or global alignment
+   
+    method _read_substitution_matrix_file(self, substitution_matrix_filename):
+        Reads in an amino acid substitution matrix from a .mat file, and stores substitution scores for 
+        each amino acid pair in a 3d dictionary
+
+        Arguments:
+            substitution_matrix_filename::str
+                Path to substitution matrix file
+        
+        Returns:
+            substitution_dict::dict
+                Dictionary with 24 primary keys corresponding to the 20 amino acids + 4 placeholders.
+                Each primary key has 24 secondary keys. Indexing substitution_dict with a primary and secondary
+                key will link to the substitution score for that given residue pair given the substitution matrix in use. 
