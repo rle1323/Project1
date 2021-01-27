@@ -25,8 +25,8 @@ from the root directory of this project.
 
 ```
 class PairwiseAligner
-This is the parent class for both pairwise alignment algorithms to be implemented in this assignment.
-It includes methods and attributes that are common to both algorithms.
+    This is the parent class for both pairwise alignment algorithms to be implemented in this assignment.
+    It includes methods and attributes that are common to both algorithms.
 
     Parameters:
         sub_matrix_file::str
@@ -35,6 +35,7 @@ It includes methods and attributes that are common to both algorithms.
             This is the gap opening penalty for the affine gap implementation of local or global alignment.
         gap_extension_penalty::float
             This is the gap extension penalty for the affine gap implementation of local or global alignment
+   
    
     method _read_substitution_matrix_file(self, substitution_matrix_filename):
         Reads in an amino acid substitution matrix from a .mat file, and stores substitution scores for 
@@ -49,3 +50,30 @@ It includes methods and attributes that are common to both algorithms.
                 Dictionary with 24 primary keys corresponding to the 20 amino acids + 4 placeholders.
                 Each primary key has 24 secondary keys. Indexing substitution_dict with a primary and secondary
                 key will link to the substitution score for that given residue pair given the substitution matrix in use. 
+  
+  
+    method _read_sequence_file(self, sequence_filename):
+        Reads in a sequence file in FASTA format and returns it as a string.
+        
+        Arguments:
+            sequence_filename::str
+                Path to sequence file
+        Returns:
+            seq::str
+                The protein sequence contained in the file
+                
+                
+    method _initialize_score_matrix(self):
+        Initializes an (m+1 x n+1) scoring/gap matrix full of zeros for use in either SW or NW, where m is the length of self.seqx and 
+        n is the length of self.seqy
+        
+        Arguments:
+            None
+        
+        Returns: 
+            matrix::numpy array (int)
+                Matrix of size (m x n) with only zeros as contents 
+                
+class SmithWaterman(PairwiseAligner):
+    This class performs pairwise local alignment using the Smith-Waterman algorithm. It is a child class of PairwiseAligner, and therefore inherits
+    the parameters necessary for initializing a SmithWaterman object.         
