@@ -169,7 +169,7 @@ sns.heatmap(auc_array, vmin=0, vmax=1, annot = True)
 plt.xlabel("(Gap open penalty - 1)")
 plt.ylabel("(Gap extension penalty - 1)")
 plt.show()
-'''
+
 
 
 
@@ -212,6 +212,53 @@ for matrix in matrices:
     ax = fig.add_subplot(111)
     plt.plot(fpr,tpr,label="Local alignment classifier, AUROC="+str(auc))
     plt.title("ROC Curve, local alignment with " + matrix)
+    plt.legend(loc=4)
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
+    plt.xlim(0,1)
+    plt.ylim(0,1)
+    ax.set_aspect('equal', adjustable='box')
+    plt.show()
+'''
+
+# ROC plots for GLOBAL ALIGNMENT
+matrices = ["BLOSUM50", "BLOSUM62", "PAM100", "PAM250"]
+for matrix in matrices:
+    mat_path = "scoring_matrices/" + matrix + ".mat"
+    global_alignment_tool = algs.NeedlemanWunsch(sub_matrix_file = mat_path, gap_start_penalty = 4, gap_extension_penalty = 5)
+
+    # iterate through the pairs and align them to generate alignment scores
+    alignment_scores = []
+    ground_truth_scores = []
+    for pair in pos_pairs:
+        _,score = global_alignment_tool.align(pair[0], pair[1])
+        alignment_scores.append(score)
+        ground_truth_scores.append(1)
+    for pair in neg_pairs:
+        _,score = global_alignment_tool.align(pair[0], pair[1])
+        alignment_scores.append(score)
+        ground_truth_scores.append(0)
+
+    # Average alignment score is threshold of "positive" or "negative" scoring
+    threshold = stats.mean(alignment_scores)
+
+    # score each alignment as a positive or negative
+    predicted_scores = []
+    for score in alignment_scores:
+        if score >= threshold:
+            predicted_scores.append(1)
+        else:
+            predicted_scores.append(0)
+
+    # compute needed fpr and tpr for roc plot
+    fpr, tpr, _ = metrics.roc_curve(ground_truth_scores,  predicted_scores)
+    auc = metrics.roc_auc_score(ground_truth_scores, predicted_scores)
+
+    # make ROC plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.plot(fpr,tpr,label="Global alignment classifier, AUROC="+str(round(auc,2)))
+    plt.title("ROC Curve, global alignment with " + matrix)
     plt.legend(loc=4)
     plt.xlabel("False positive rate")
     plt.ylabel("True positive rate")

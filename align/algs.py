@@ -5,7 +5,16 @@ class PairwiseAligner:
     """
     This is the parent class for both pairwise alignment algorithms to be implemented in this assignment.
     It includes methods and attributes that are common to both algorithms.
+
+    Parameters:
+        sub_matrix_file::str
+            Path to a substitution matrix file. This file is subsequently read into the substitution_matrix attribute
+        gap_start_penalty::float
+            This is the gap opening penalty for the affine gap implementation of local or global alignment.
+        gap_extension_penalty::float
+            This is the gap extension penalty for the affine gap implementation of local or global alignment
     """
+
     def __init__(self, sub_matrix_file, gap_start_penalty, gap_extension_penalty):
         self.seqx = None
         self.seqy = None
@@ -72,7 +81,7 @@ class PairwiseAligner:
 
     def _initialize_score_matrix(self):
         """
-        Initializes an (m x n) scoring/gap matrix full of zeros for use in either SW or NW, where m is the length of self.seqx and 
+        Initializes an (m+1 x n+1) scoring/gap matrix full of zeros for use in either SW or NW, where m is the length of self.seqx and 
         n is the length of self.seqy
         
         Arguments:
@@ -85,11 +94,52 @@ class PairwiseAligner:
         matrix = np.zeros( (len(self.seqx) + 1, len(self.seqy) + 1) )
         return matrix 
 
+    def _forward_pass(self):
+        """
+        Generic parent version of the method that fills in the scoring matrix for either local or global alignment. Class-specific implementations included in
+        class definitions.
+        """
+        pass
+
+    def _backwards_pass(self):
+        """
+        Generic parent version of the method that follows pointer matrix to reconstruct alignment for either local or global alignment. Class-specific implementations included in
+        class definitions.
+        """
+        pass
+    
+    def align(self):
+        """
+        Generic parent version of the wrapper method that performs entire alignment process. Class-specific implementations of this method 
+        are largely the same, with minor changes in how alignment scores are found, and where to start alignment traceback
+        """
+        pass
+
 class SmithWaterman(PairwiseAligner):
+    """
+    This class performs pairwise local alignment using the Smith-Waterman algorithm. It is a child class of PairwiseAligner, and therefore inherits
+    the parameters necessary for initializing a SmithWaterman object.
+    """
+
     def __init__(self, sub_matrix_file, gap_start_penalty, gap_extension_penalty):
         super().__init__(sub_matrix_file, gap_start_penalty, gap_extension_penalty)
 
     def _forward_pass(self):
+        """
+        This method performs the forward pass step of the Smith-Waterman algorithm, where all possible local alignments are scored and these 
+        scores are held in a scoring matrix. A pointer matrix is also created to allow for the optimal local alignment to be found and constructed
+
+        Arguments:
+            None
+
+        Returns:
+            score_matrix::[float]
+                A float array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the scores of all of the possible local alignments between the two sequences
+            pointer_matrix_main::[int]
+                An int array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the the traceback directions for each corresponding cell in score_matrix
+        """
         # initialize matrices for storing scores 
         score_matrix = self._initialize_score_matrix()
         gap_matrix_x = self._initialize_score_matrix()
@@ -138,6 +188,24 @@ class SmithWaterman(PairwiseAligner):
         return score_matrix, pointer_matrix_main
     
     def _backwards_pass(self, pointer_matrix, i, j):
+        """
+        This method performs traceback of any of the local alignments stored in score_matrix
+
+        Arguments:
+            pointer_matrix::[int]
+                An int array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the the traceback directions for all possible alignment positions between the two sequences
+            i::int
+                starting position in seqx of the traceback being performed
+            j::int
+                starting position in seqy of the traceback being performed
+        
+        Returns:
+            aligned_seqx::str
+                The subsequence of seqx, with gaps, that is in the optimal local alignment between seqx and seqy
+            aligned_seqy::str
+                The subsequence of seqy, with gaps, that is in the optimal local alignment between seqx and seqy
+        """
         aligned_seqx = ""
         aligned_seqy = ""
         while i > 0 and j > 0 and pointer_matrix[i,j] != 3:
@@ -151,13 +219,28 @@ class SmithWaterman(PairwiseAligner):
                 aligned_seqx = "-" + aligned_seqx
                 aligned_seqy = self.seqy[j-1] + aligned_seqy
                 j -= 1 # since we have a gap in x, only go to the next residue for y
-            elif current_val == 2: # this means that we are in the y-axis pointer matrix]
+            elif current_val == 2: # this means that we are in the y-axis pointer matrix
                 aligned_seqy = "-" + aligned_seqy
                 aligned_seqx = self.seqx[i-1] + aligned_seqx
                 i -= 1 # since we have a gap in y, only go to the next residue for x
         return aligned_seqx, aligned_seqy
     
     def align(self, seqx_file, seqy_file):
+        """
+        Wrapper method that incorporates all of the steps for Smith-Waterman local alignment.
+
+        Arguments:
+            seqx_file::str
+                Path to the fasta file containing the first sequence involved in the pairwise alignment
+            seqy_file::str
+                Path to the fasta file containing the second sequence involved in the pairwise alignment
+        
+        Returns:
+            aligned_seqs::[str]
+                A 1x2 list contaning both subsequences, with gaps if necessary, in the optimal local alignment
+            alignment_score::float
+                The alignment score of the optimal local alignment found between the two sequences
+        """
         self.seqx = self._read_sequence_file(seqx_file)
         self.seqy = self._read_sequence_file(seqy_file)
         # fill out score matrices and traceback matrix (forward)
@@ -168,15 +251,35 @@ class SmithWaterman(PairwiseAligner):
         # traceback (backwards pass)	
         # get index of maximum score in score_matrix, to start the traceback at that index
         aligned_seqx, aligned_seqy = self._backwards_pass(pointer_matrix_main, max_i, max_j)
-
-        return [aligned_seqx, aligned_seqy], alignment_score
+        aligned_seqs = [aligned_seqx, aligned_seqy]
+        return aligned_seqs, alignment_score
        
 
 class NeedlemanWunsch(PairwiseAligner):
+    """
+    This class performs pairwise global alignment using the Needleman-Wunsch algorithm. It is a child class of PairwiseAligner, and therefore inherits
+    the parameters necessary for initializing a NeedlemanWunsch object.
+    """
+
     def __init__(self, sub_matrix_file, gap_start_penalty, gap_extension_penalty):
         super().__init__(sub_matrix_file, gap_start_penalty, gap_extension_penalty)
 
     def _forward_pass(self):
+        """
+        This method performs the forward pass step of the Needleman-Wunsch algorithm, where all possible local alignments are scored and these 
+        scores are held in a scoring matrix. A pointer matrix is also created to allow for the optimal global alignment to be constructed
+
+        Arguments:
+            None
+
+        Returns:
+            score_matrix::[float]
+                A float array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the scores of all of the possible global alignments between the two sequences
+            pointer_matrix_main::[int]
+                An int array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the the traceback directions for each corresponding cell in score_matrix
+        """
         # initialize matrices for storing scores 
         score_matrix = self._initialize_score_matrix()
         gap_matrix_x = self._initialize_score_matrix()
@@ -224,6 +327,23 @@ class NeedlemanWunsch(PairwiseAligner):
         return score_matrix, pointer_matrix_main
     
     def _backwards_pass(self, pointer_matrix, i, j):
+        """
+        This method performs traceback of the optimal global alignment stored in score_matrix
+
+        Arguments:
+            pointer_matrix::[int]
+                An int array of size (m+1)x(n+1), where m and n are the lengths of the two sequences being aligned respectively. This matrix
+                holds the the traceback directions for all possible alignment positions between the two sequences
+            i::int
+                starting position in seqx of the traceback being performed. For Needleman-Wunsch, this is always equal to m
+            j::int
+                starting position in seqy of the traceback being performed. For Needleman-Wunsch, this is always equal to n
+        Returns:
+            aligned_seqx::str
+                The sequence of seqx, with gaps, that is in the optimal global alignment between seqx and seqy
+            aligned_seqy::str
+                The sequence of seqy, with gaps, that is in the optimal global alignment between seqx and seqy
+        """
         aligned_seqx = ""
         aligned_seqy = ""
         while i > 0 or j > 0:
@@ -256,6 +376,21 @@ class NeedlemanWunsch(PairwiseAligner):
 
     
     def align(self, seqx_file, seqy_file):
+        """
+        Wrapper method that incorporates all of the steps for Needleman-Wunsch global alignment.
+
+        Arguments:
+            seqx_file::str
+                Path to the fasta file containing the first sequence involved in the pairwise alignment
+            seqy_file::str
+                Path to the fasta file containing the second sequence involved in the pairwise alignment
+        
+        Returns:
+            aligned_seqs::[str]
+                A 1x2 list contaning both sequences, with gaps if necessary, in the optimal global alignment
+            alignment_score::float
+                The  score of the optimal global alignment found between the two sequences
+        """
         # read in the two sequence files
         self.seqx = self._read_sequence_file(seqx_file)
         self.seqy = self._read_sequence_file(seqy_file)
@@ -265,19 +400,5 @@ class NeedlemanWunsch(PairwiseAligner):
         # traceback (backwards pass)	
         # get index of maximum score in score_matrix, to start the traceback at that index
         aligned_seqx, aligned_seqy = self._backwards_pass(pointer_matrix_main, len(self.seqx), len(self.seqy))
-        print(alignment_score)
-        print(aligned_seqy)
-        print(aligned_seqx)
-
-
-nw_test = NeedlemanWunsch(sub_matrix_file = "../scoring_matrices/BLOSUM62.mat",
-						  gap_start_penalty = 10,
-				          gap_extension_penalty = 1)
-
-nw_test.align(seqx_file = "../sequences/prot-0018.fa", seqy_file = "../sequences/prot-18.fa")
-
-#nw_test = NeedlemanWunsch(sub_matrix_file = "../scoring_matrices/dna.mat",
-#                          gap_start_penalty = 16,
-#                          gap_extension_penalty = 4)
-
-#nw_test.align(seqx_file = "../sequences/dna-2.fa", seqy_file = "../sequences/dna-1.fa")
+        aligned_seqs = [aligned_seqx, aligned_seqy]
+        return aligned_seqs, alignment_score
