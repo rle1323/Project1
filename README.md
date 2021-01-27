@@ -21,6 +21,9 @@ python -m pytest test/*
 ```
 from the root directory of this project.
 
+### Layout of repository
+Relative locations of files have not been changed from the project skeleton. Class definitions are stored in align/algs.py. Plotting and other analyses for free response questions are in align/__main__.py. Basic examples of implementation can be viewed there. Unit tests are implemented in test/test_align.py.
+
 ### API Documentation
 
 ```
