@@ -180,4 +180,8 @@ class NeedlemanWunsch(PairwiseAligner):
             aligned_seqs::[str]
                 A 1x2 list contaning both sequences, with gaps if necessary, in the optimal global alignment
             alignment_score::float
+<<<<<<< HEAD
                 The  score of the optimal global alignment found between the two sequences
+=======
+                The  score of the optimal global alignment found between the two sequences
+>>>>>>> a56d673602b7436975e4f8ec33d25169ad565411
